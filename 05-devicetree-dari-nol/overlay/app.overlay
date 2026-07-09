@@ -1,0 +1,36 @@
+/*
+ * Tiga LED eksternal (merah, kuning, hijau) dan satu tombol.
+ * Semua pin di bawah aman dipakai umum, bukan strapping pin ESP32-S3.
+ */
+/ {
+	leds {
+		compatible = "gpio-leds";
+		led_merah: led_0 {
+			gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+			label = "LED Merah";
+		};
+		led_kuning: led_1 {
+			gpios = <&gpio0 5 GPIO_ACTIVE_HIGH>;
+			label = "LED Kuning";
+		};
+		led_hijau: led_2 {
+			gpios = <&gpio0 6 GPIO_ACTIVE_HIGH>;
+			label = "LED Hijau";
+		};
+	};
+
+	tombol {
+		compatible = "gpio-keys";
+		tombol_0: button_0 {
+			gpios = <&gpio0 7 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			label = "Tombol Utama";
+		};
+	};
+
+	aliases {
+		led0 = &led_merah;
+		led1 = &led_kuning;
+		led2 = &led_hijau;
+		sw0 = &tombol_0;
+	};
+};

@@ -1,0 +1,43 @@
+/*
+ * I2C/MPU6050 sama persis dengan Tahap 1, ditambah satu LED status di
+ * GPIO4 untuk indikator logging aktif/idle.
+ */
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
+&i2c0 {
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-names = "default";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+
+	mpu6050: mpu6050@68 {
+		compatible = "invensense,mpu6050";
+		reg = <0x68>;
+		status = "okay";
+	};
+};
+
+&pinctrl {
+	i2c0_default: i2c0_default {
+		group1 {
+			pinmux = <I2C0_SDA_GPIO8>, <I2C0_SCL_GPIO9>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+};
+
+/ {
+	leds {
+		compatible = "gpio-leds";
+		led_status: led_0 {
+			gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+			label = "LED Status Logging";
+		};
+	};
+
+	aliases {
+		led0 = &led_status;
+	};
+};

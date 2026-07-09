@@ -1,0 +1,12 @@
+menu "Konfigurasi Aplikasi Logging"
+
+config LOG_INTERVAL_MS
+	int "Interval logging dalam milidetik"
+	default 1000
+	help
+	  Interval antara satu baris log periodik dengan berikutnya.
+	  Ubah nilai ini lewat prj.conf, jangan hardcode di main.c.
+
+endmenu
+
+source "Kconfig.zephyr"

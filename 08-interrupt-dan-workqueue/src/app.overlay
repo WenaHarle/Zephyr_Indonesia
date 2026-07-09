@@ -1,0 +1,23 @@
+/* LED di GPIO4, tombol di GPIO7 dengan internal pull-up, sama seperti Bagian 5. */
+/ {
+	leds {
+		compatible = "gpio-leds";
+		led0: led_0 {
+			gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+			label = "LED Burst";
+		};
+	};
+
+	tombol {
+		compatible = "gpio-keys";
+		tombol_0: button_0 {
+			gpios = <&gpio0 7 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			label = "Tombol Burst";
+		};
+	};
+
+	aliases {
+		led0 = &led0;
+		sw0 = &tombol_0;
+	};
+};

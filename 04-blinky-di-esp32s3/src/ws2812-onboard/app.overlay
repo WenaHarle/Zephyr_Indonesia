@@ -1,0 +1,38 @@
+/*
+ * WS2812 onboard ESP32-S3-DevKitC-1 di GPIO48, lewat peripheral RMT.
+ *
+ * CATATAN: property RMT/pinctrl ini termasuk yang paling sering berubah
+ * sintaksnya antar rilis Zephyr. Kalau build gagal karena property tidak
+ * dikenal, buka samples/drivers/led_ws2812/boards/esp32s3_devkitc.overlay
+ * di source tree Zephyr Anda dan samakan dengan versi itu.
+ */
+&rmt0 {
+	status = "okay";
+	pinctrl-0 = <&rmt0_default>;
+	pinctrl-names = "default";
+
+	led_strip: ws2812 {
+		compatible = "worldsemi,ws2812-rmt";
+		reg = <0>;
+		chain-length = <1>;
+		resolution = <10000000>;
+		reset-delay = <280>;
+		color-mapping = <LED_COLOR_ID_GREEN LED_COLOR_ID_RED LED_COLOR_ID_BLUE>;
+		status = "okay";
+	};
+};
+
+&pinctrl {
+	rmt0_default: rmt0_default {
+		group1 {
+			pinmux = <RMT0_CHANNEL0>;
+			output-enable;
+		};
+	};
+};
+
+/ {
+	aliases {
+		led-strip = &led_strip;
+	};
+};

@@ -1,0 +1,7 @@
+# Defconfig board level, cukup pastikan console dan GPIO aktif.
+# Sisanya (clock, cache, dst) sudah didapat dari default SoC ESP32-S3.
+CONFIG_SOC_SERIES_ESP32S3=y
+CONFIG_SERIAL=y
+CONFIG_CONSOLE=y
+CONFIG_UART_CONSOLE=y
+CONFIG_GPIO=y

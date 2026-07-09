@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_ZI_WROOM_S3
+
+config BOARD
+	default "zi_wroom_s3"
+
+endif # BOARD_ZI_WROOM_S3

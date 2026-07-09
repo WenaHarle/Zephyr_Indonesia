@@ -1,0 +1,5 @@
+# Board kustom berbasis modul ESP32-S3-WROOM telanjang (bukan DevKitC-1).
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_ZI_WROOM_S3
+	bool

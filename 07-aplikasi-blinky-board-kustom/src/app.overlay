@@ -1,0 +1,32 @@
+/*
+ * Menambah dua LED dan satu tombol di atas board dts zi_wroom_s3 yang
+ * sudah punya led0 di GPIO9. led0 tidak didefinisikan ulang di sini,
+ * cukup ditambahkan node baru untuk led1, led2, dan tombol.
+ */
+/ {
+	leds {
+		compatible = "gpio-leds";
+		led1: led_1 {
+			gpios = <&gpio0 10 GPIO_ACTIVE_HIGH>;
+			label = "LED 1";
+		};
+		led2: led_2 {
+			gpios = <&gpio0 11 GPIO_ACTIVE_HIGH>;
+			label = "LED 2";
+		};
+	};
+
+	tombol {
+		compatible = "gpio-keys";
+		tombol_kecepatan: button_0 {
+			gpios = <&gpio0 12 (GPIO_ACTIVE_LOW | GPIO_PULL_UP)>;
+			label = "Tombol Kecepatan";
+		};
+	};
+
+	aliases {
+		led1 = &led1;
+		led2 = &led2;
+		sw0 = &tombol_kecepatan;
+	};
+};

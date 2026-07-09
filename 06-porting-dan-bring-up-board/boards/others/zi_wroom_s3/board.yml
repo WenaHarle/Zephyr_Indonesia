@@ -1,0 +1,8 @@
+board:
+  name: zi_wroom_s3
+  vendor: others
+  socs:
+    - name: esp32s3
+      cpuclusters:
+        - name: procpu
+        - name: appcpu

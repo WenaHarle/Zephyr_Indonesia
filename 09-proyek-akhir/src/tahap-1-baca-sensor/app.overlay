@@ -1,0 +1,34 @@
+/*
+ * MPU6050 lewat I2C0. SDA di GPIO8, SCL di GPIO9.
+ * Alamat I2C default 0x68 (0x69 kalau pin AD0 modul ditarik high).
+ *
+ * Nama macro pinmux I2C bisa berbeda antar rilis Zephyr, kalau build
+ * gagal karena macro tidak dikenal, cek konvensi penamaan yang benar
+ * lewat file dtsi board esp32s3_devkitc atau contoh overlay board lain
+ * yang sudah pakai i2c0 di source tree Zephyr Anda.
+ */
+#include <zephyr/dt-bindings/i2c/i2c.h>
+
+&i2c0 {
+	status = "okay";
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-names = "default";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+
+	mpu6050: mpu6050@68 {
+		compatible = "invensense,mpu6050";
+		reg = <0x68>;
+		status = "okay";
+	};
+};
+
+&pinctrl {
+	i2c0_default: i2c0_default {
+		group1 {
+			pinmux = <I2C0_SDA_GPIO8>, <I2C0_SCL_GPIO9>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+};
