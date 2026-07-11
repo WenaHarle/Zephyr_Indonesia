@@ -155,6 +155,31 @@ Error `west: command not found` setelah membuka terminal baru — venv belum dia
 
 Kalau `west update` macet di tengah dengan error timeout koneksi ke GitHub, jalankan ulang saja `west update`, dia resume dari commit yang belum ter-fetch. Kalau sering putus, cek dulu apakah ada proxy/firewall kantor yang membatasi koneksi git.
 
+Kalau muncul error seperti ini:
+```
+The module for fetcher "git_lfs" could not be imported (No module named 'requests').
+The module for fetcher "http" could not be imported (No module named 'requests').
+Missing jsonschema dependency
+```
+artinya venv Anda kehilangan dua dependency Python yang dipakai west's blob fetcher — `requests` dan `jsonschema`. Ini biasanya kejadian kalau langkah `pip install -r requirements.txt` di bagian "Inisialisasi workspace" sebelumnya sempat terlewat atau gagal sebagian. Perbaikannya, install ulang requirements resmi (lebih aman daripada install manual dua paket saja, karena sekalian menangkap dependency lain yang mungkin ikut hilang):
+```bash
+pip install -r ~/zephyrproject/zephyr/scripts/requirements.txt
+```
+Kalau masih mau cepat tanpa install ulang semua requirements, cukup:
+```bash
+pip install requests jsonschema
+```
+Setelah itu jalankan lagi `west blobs fetch hal_espressif`.
+```
+
+Selain itu, sebaiknya tambahkan satu baris juga di bagian **Troubleshooting lain yang pernah saya temui**, biar orang yang scroll ke situ dulu (tanpa baca urut) tetap ketemu solusinya:
+
+```markdown
+Error `No module named 'requests'` atau `Missing jsonschema dependency` saat `west blobs fetch` — venv belum lengkap paketnya. Jalankan `pip install -r ~/zephyrproject/zephyr/scripts/requirements.txt` di dalam venv yang aktif.
+```
+
+Ini konsisten dengan gaya dokumen kamu yang lain — errornya ditaruh dekat command pemicunya, plus disebut ulang ringkas di ringkasan troubleshooting akhir.
+
 ## Sumber
 
 - [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
