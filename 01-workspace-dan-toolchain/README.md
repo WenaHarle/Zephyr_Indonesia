@@ -55,11 +55,20 @@ pip install west
 
 Workspace Zephyr punya struktur khusus: ada folder `zephyr/` (source Zephyr itu sendiri), folder `modules/` (HAL vendor, driver eksternal), dan file manifest `.west/config`. Semua ini diatur otomatis oleh `west init` dan `west update`, jangan clone manual dengan `git clone`.
 
-```bash
-west init ~/zephyrproject
-cd ~/zephyrproject
-west update
-```
+> **Penting:** `west init ~/zephyrproject` tanpa argumen tambahan akan menarik branch default upstream, yang kadang menunjuk ke branch development/main, bukan rilis stabil. Untuk memastikan Anda mendapat Zephyr v4.2 seperti acuan tulisan ini (dan supaya kompatibel dengan Zephyr SDK 0.17.0 di langkah selanjutnya), pin versi rilis secara eksplisit:
+> ```bash
+> west init -m https://github.com/zephyrproject-rtos/zephyr --mr v4.2.0 ~/zephyrproject
+> cd ~/zephyrproject
+> west update
+> ```
+> Kalau workspace sudah kadung ter-init dan `west update` menarik branch main (versi semacam `4.4.99`), pindah ke rilis stabil dengan:
+> ```bash
+> cd ~/zephyrproject/zephyr
+> git fetch origin
+> git checkout v4.2.0
+> cd ~/zephyrproject
+> west update
+> ```
 
 Perintah `west update` ini yang paling lama — mengunduh semua modul termasuk HAL Espressif, HAL berbagai vendor lain yang terdaftar di manifest default, dan lain-lain. Bisa 20-30 menit tergantung koneksi, dan ukurannya bisa lebih dari 6 GB kalau dihitung semua HAL vendor (meski yang benar-benar dipakai untuk ESP32-S3 cuma sebagian kecil). Kalau koneksi terputus di tengah jalan, tinggal jalankan `west update` lagi, dia akan melanjutkan bukan mengulang dari nol.
 
@@ -82,7 +91,13 @@ cd zephyr-sdk-0.17.0
 ./setup.sh
 ```
 
-Cek dulu di [halaman rilis sdk-ng](https://github.com/zephyrproject-rtos/sdk-ng/releases) untuk nomor versi SDK yang direkomendasikan untuk versi Zephyr yang Anda pakai — biasanya tercantum di `zephyr/SDK_VERSION` di dalam source tree Zephyr. Jangan asal pakai versi terbaru kalau versi Zephyr Anda lebih lama, kadang tidak kompatibel.
+Cek dulu di [halaman rilis sdk-ng](https://github.com/zephyrproject-rtos/sdk-ng/releases) untuk nomor versi SDK yang direkomendasikan untuk versi Zephyr yang Anda pakai — biasanya tercantum di `zephyr/SDK_VERSION` di dalam source tree Zephyr:
+
+```bash
+cat ~/zephyrproject/zephyr/SDK_VERSION
+```
+
+Jangan asal pakai versi terbaru kalau versi Zephyr Anda lebih lama, kadang tidak kompatibel — lihat bagian troubleshooting di bawah kalau sudah terlanjur mismatch.
 
 Script `setup.sh` akan menawarkan install udev rules untuk board debugging (J-Link, OpenOCD, dst). Jawab "yes" untuk semua toolchain yang ditanyakan kalau tidak yakin arsitektur mana saja yang dipakai — ruang disk tambahan tidak signifikan dibanding waktu yang hilang kalau nanti ternyata kurang.
 
@@ -95,6 +110,28 @@ source ~/zephyrproject/.venv/bin/activate
 cd ~/zephyrproject
 west blobs fetch hal_espressif
 ```
+
+Kalau muncul error seperti ini:
+
+```
+The module for fetcher "git_lfs" could not be imported (No module named 'requests').
+The module for fetcher "http" could not be imported (No module named 'requests').
+Missing jsonschema dependency
+```
+
+artinya venv Anda kehilangan dua dependency Python yang dipakai west's blob fetcher — `requests` dan `jsonschema`. Ini biasanya kejadian kalau langkah `pip install -r requirements.txt` di bagian "Inisialisasi workspace" sebelumnya sempat terlewat atau gagal sebagian. Perbaikannya, install ulang requirements resmi (lebih aman daripada install manual dua paket saja, karena sekalian menangkap dependency lain yang mungkin ikut hilang):
+
+```bash
+pip install -r ~/zephyrproject/zephyr/scripts/requirements.txt
+```
+
+Kalau masih mau cepat tanpa install ulang semua requirements, cukup:
+
+```bash
+pip install requests jsonschema
+```
+
+Setelah itu jalankan lagi `west blobs fetch hal_espressif`.
 
 Perintah ini mengunduh blob biner yang terdaftar di modul `hal_espressif` — termasuk firmware WiFi/Bluetooth kalau board Anda memakainya nanti, dan beberapa bootloader stage 2 untuk chip Espressif tertentu. Untuk kasus blinky sederhana blob-blob ini mungkin tidak semuanya kepakai, tapi fetch saja sekarang supaya tidak ada kejutan "file not found" di tengah build nanti.
 
@@ -112,7 +149,6 @@ west build -p always -b esp32s3_devkitc/esp32s3/procpu samples/hello_world
 Kalau build selesai tanpa error dan diakhiri baris semacam `Memory region  Used Size  Region Size  %age Used`, berarti toolchain, SDK, dan HAL semuanya sudah nyambung dengan benar. Detail build dan flashing yang sebenarnya dibahas di [Bagian 2](../02-aplikasi-pertama/README.md) — bagian ini cuma untuk memastikan environment beres dulu.
 
 ![Output west build yang berhasil](images/01-build-sukses.png)
-<!-- TODO(author): tambahkan screenshot terminal setelah west build selesai tanpa error, tampilkan bagian Memory region -->
 
 ## Troubleshooting akses USB
 
@@ -149,34 +185,17 @@ Kalau board dua-duanya tidak muncul sama sekali di `/dev`, coba kabel USB lain (
 
 ## Troubleshooting lain yang pernah saya temui
 
-Build gagal dengan pesan semacam `Unable to find Zephyr SDK` — biasanya karena environment variable `ZEPHYR_SDK_INSTALL_DIR` tidak terdeteksi. Set manual atau pastikan script `setup.sh` SDK dijalankan sampai selesai (dia menulis file cmake package registry di `~/.cmake/packages/Zephyr-sdk/`).
+**`Unable to find Zephyr SDK`** — biasanya karena environment variable `ZEPHYR_SDK_INSTALL_DIR` tidak terdeteksi. Set manual atau pastikan script `setup.sh` SDK dijalankan sampai selesai (dia menulis file cmake package registry di `~/.cmake/packages/Zephyr-sdk/`).
 
-Error `west: command not found` setelah membuka terminal baru — venv belum diaktifkan lagi. Solusinya ya aktifkan lagi venv, atau pakai alias yang sudah disiapkan di atas.
+**`west: command not found`** setelah membuka terminal baru — venv belum diaktifkan lagi. Solusinya ya aktifkan lagi venv, atau pakai alias yang sudah disiapkan di atas.
 
-Kalau `west update` macet di tengah dengan error timeout koneksi ke GitHub, jalankan ulang saja `west update`, dia resume dari commit yang belum ter-fetch. Kalau sering putus, cek dulu apakah ada proxy/firewall kantor yang membatasi koneksi git.
+**`west update` macet di tengah** dengan error timeout koneksi ke GitHub — jalankan ulang saja `west update`, dia resume dari commit yang belum ter-fetch. Kalau sering putus, cek dulu apakah ada proxy/firewall kantor yang membatasi koneksi git.
 
-Kalau muncul error seperti ini:
-```
-The module for fetcher "git_lfs" could not be imported (No module named 'requests').
-The module for fetcher "http" could not be imported (No module named 'requests').
-Missing jsonschema dependency
-```
-artinya venv Anda kehilangan dua dependency Python yang dipakai west's blob fetcher — `requests` dan `jsonschema`. Ini biasanya kejadian kalau langkah `pip install -r requirements.txt` di bagian "Inisialisasi workspace" sebelumnya sempat terlewat atau gagal sebagian. Perbaikannya, install ulang requirements resmi (lebih aman daripada install manual dua paket saja, karena sekalian menangkap dependency lain yang mungkin ikut hilang):
-```bash
-pip install -r ~/zephyrproject/zephyr/scripts/requirements.txt
-```
-Kalau masih mau cepat tanpa install ulang semua requirements, cukup:
-```bash
-pip install requests jsonschema
-```
-Setelah itu jalankan lagi `west blobs fetch hal_espressif`.
-```
+**`No module named 'requests'`** atau **`Missing jsonschema dependency`** saat `west blobs fetch` — venv belum lengkap paketnya. Jalankan `pip install -r ~/zephyrproject/zephyr/scripts/requirements.txt` di dalam venv yang aktif.
 
-Selain itu, sebaiknya tambahkan satu baris juga di bagian **Troubleshooting lain yang pernah saya temui**, biar orang yang scroll ke situ dulu (tanpa baca urut) tetap ketemu solusinya:
-
-```markdown
-Error `No module named 'requests'` atau `Missing jsonschema dependency` saat `west blobs fetch` — venv belum lengkap paketnya. Jalankan `pip install -r ~/zephyrproject/zephyr/scripts/requirements.txt` di dalam venv yang aktif.
-```
+**`Could not find a configuration file for package "Zephyr-sdk" that is compatible with requested version`** — Zephyr source dan Zephyr SDK versinya tidak sinkron (biasanya karena workspace menarik branch main/dev, bukan rilis stabil, contohnya versi semacam `4.4.99`). Cek `cat ~/zephyrproject/zephyr/SDK_VERSION` untuk tahu versi SDK yang diminta, lalu:
+- Pin Zephyr ke rilis stabil yang sesuai tutorial ini: `cd ~/zephyrproject/zephyr && git checkout v4.2.0 && cd ~/zephyrproject && west update`, ATAU
+- Install Zephyr SDK versi yang sesuai dengan Zephyr source Anda (SDK bisa ter-install berdampingan, tidak perlu hapus versi lama).
 
 ## Sumber
 
