@@ -178,8 +178,6 @@ Selain itu, sebaiknya tambahkan satu baris juga di bagian **Troubleshooting lain
 Error `No module named 'requests'` atau `Missing jsonschema dependency` saat `west blobs fetch` — venv belum lengkap paketnya. Jalankan `pip install -r ~/zephyrproject/zephyr/scripts/requirements.txt` di dalam venv yang aktif.
 ```
 
-Ini konsisten dengan gaya dokumen kamu yang lain — errornya ditaruh dekat command pemicunya, plus disebut ulang ringkas di ringkasan troubleshooting akhir.
-
 ## Sumber
 
 - [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
