@@ -51,6 +51,53 @@ West adalah tool CLI yang mengatur multi-repository manifest Zephyr (mirip `repo
 pip install west
 ```
 
+Sampai titik ini, `west` yang terpasang baru versi "telanjang" — dia cuma tahu perintah bawaan seperti `west init`, `west update`, `west list`, `west help`. Perintah-perintah seperti `west build`, `west flash`, atau `west espressif monitor` **belum ada** sampai workspace-nya benar-benar diinisialisasi dan di-update. Ini penting dipahami sebelum lanjut, jadi saya jelaskan dulu konsepnya di bagian berikut sebelum benar-benar menjalankan `west init`.
+
+## Bagaimana workspace west bekerja
+
+Ini bagian yang sering dilewati di tutorial lain, padahal paling sering jadi sumber error membingungkan semacam:
+
+```
+west: unknown command "build"; do you need to run this inside a workspace?
+```
+
+West dirancang untuk mengelola *multi-repository project* — satu "workspace" berisi banyak repository git yang saling berhubungan (Zephyr core, puluhan HAL vendor, modul pihak ketiga, dan project aplikasi Anda sendiri). Supaya west tahu repository mana saja yang termasuk satu workspace, dia butuh sebuah **topdir** — folder akar workspace yang ditandai dengan keberadaan folder `.west/` di dalamnya.
+
+Struktur topdir kira-kira begini setelah `west init` dan `west update`:
+
+```
+~/zephyrproject/              <- topdir, ditandai oleh .west/
+├── .west/
+│   └── config                <- lokasi manifest repo, path, dll
+├── zephyr/                   <- manifest repository (source Zephyr)
+│   └── west.yml               <- daftar semua project/module lain
+├── modules/                  <- HAL vendor, driver eksternal (hal_espressif, dst)
+├── bootloader/
+├── tools/
+└── (project Anda sendiri, misal 02-aplikasi-pertama/)
+```
+
+Beberapa konsep kunci:
+
+- **Manifest repository** — biasanya folder `zephyr/`. Di dalamnya ada file `west.yml` yang mendaftar semua repository lain (`modules/hal_espressif`, `modules/hal_nordic`, dst) beserta revisi commit-nya masing-masing. `west update` membaca file ini dan meng-clone/checkout semua yang terdaftar.
+- **`.west/config`** — file kecil di topdir yang isinya cuma menunjuk ke manifest repo (`manifest.path = zephyr`) dan beberapa setting lain. Inilah yang jadi "penanda" workspace. Ketika Anda menjalankan `west` apa saja, dia akan **mencari ke atas** (parent directory demi parent directory) sampai ketemu folder `.west/`. Kalau sampai ke root filesystem tanpa ketemu, west menganggap Anda tidak sedang berada di dalam workspace — dan itu sebabnya cuma perintah bawaan yang muncul.
+- **Extension commands** — perintah seperti `build`, `flash`, `debug`, `espressif` **bukan** bagian dari west itu sendiri. Mereka didaftarkan lewat file `zephyr/scripts/west-commands.yml` (dan `west-commands.yml` milik modul lain, misal dari `hal_espressif` untuk `west espressif`). West hanya bisa membaca file ini kalau dia berhasil menemukan `.west/config` dan menelusuri manifest repository-nya. Jadi ada dua syarat yang harus sama-sama terpenuhi: (1) Anda berada di dalam/bawah topdir workspace, dan (2) `west update` sudah pernah dijalankan sampai selesai supaya `zephyr/` dan modul-modul itu benar-benar ada di disk.
+
+Konsekuensi praktisnya:
+
+- Anda **boleh** menjalankan `west build` dari folder mana saja, asalkan folder itu ada **di dalam** topdir (termasuk beberapa level subfolder, misal `~/zephyrproject/Zephyr_Indonesia/02-aplikasi-pertama`) — west akan otomatis menemukan `.west/` di atasnya.
+- Kalau project aplikasi Anda (misal folder tutorial `Zephyr_Indonesia/`) berada **di luar** `~/zephyrproject/`, west tidak akan pernah menemukan `.west/config` walaupun Zephyr SDK dan semua sudah terpasang benar. Solusinya bukan install ulang apa pun, cukup pindahkan/symlink project Anda ke dalam topdir, atau `cd` ke dalamnya sebelum menjalankan `west build`.
+- Satu mesin bisa punya lebih dari satu topdir/workspace (misal untuk versi Zephyr berbeda), tapi masing-masing berdiri sendiri — modul dan SDK yang ke-resolve tergantung workspace mana yang sedang Anda pijak.
+
+Cara cepat verifikasi Anda sedang berada di dalam workspace yang benar:
+
+```bash
+west topdir     # mencetak path topdir kalau ketemu, error kalau tidak
+west list       # mencetak semua project yang terdaftar di manifest (zephyr, hal_espressif, dst)
+```
+
+Kalau `west topdir` gagal atau `west list` kosong/error, berarti salah satu dari dua syarat di atas belum terpenuhi — itu yang perlu dibereskan dulu sebelum lanjut ke `west build`.
+
 ## Inisialisasi workspace
 
 Workspace Zephyr punya struktur khusus: ada folder `zephyr/` (source Zephyr itu sendiri), folder `modules/` (HAL vendor, driver eksternal), dan file manifest `.west/config`. Semua ini diatur otomatis oleh `west init` dan `west update`, jangan clone manual dengan `git clone`.
@@ -71,6 +118,8 @@ Workspace Zephyr punya struktur khusus: ada folder `zephyr/` (source Zephyr itu 
 > ```
 
 Perintah `west update` ini yang paling lama — mengunduh semua modul termasuk HAL Espressif, HAL berbagai vendor lain yang terdaftar di manifest default, dan lain-lain. Bisa 20-30 menit tergantung koneksi, dan ukurannya bisa lebih dari 6 GB kalau dihitung semua HAL vendor (meski yang benar-benar dipakai untuk ESP32-S3 cuma sebagian kecil). Kalau koneksi terputus di tengah jalan, tinggal jalankan `west update` lagi, dia akan melanjutkan bukan mengulang dari nol.
+
+Ini juga momen yang tepat untuk mengecek pemahaman dari bagian sebelumnya: setelah `west update` selesai, coba `west list` — sekarang seharusnya keluar daftar panjang berisi `zephyr`, `hal_espressif`, `cmsis`, dan puluhan modul lain, masing-masing dengan path dan revisi commit-nya. Kalau daftar ini sudah muncul, extension commands seperti `build`/`flash` sudah aktif untuk siapa saja yang berada di dalam topdir ini.
 
 Setelah selesai, install requirement Python tambahan yang dipakai script build Zephyr:
 
@@ -139,7 +188,7 @@ Espressif juga mendistribusikan toolchain sendiri (`riscv32-esp-elf` dan `xtensa
 
 ## Verifikasi instalasi
 
-Cara paling cepat verifikasi semua terpasang benar adalah langsung build sample:
+Cara paling cepat verifikasi semua terpasang benar adalah langsung build sample. Ingat dari bagian "Bagaimana workspace west bekerja" di atas: ini harus dijalankan dari dalam topdir workspace, jadi pastikan posisi Anda benar dulu:
 
 ```bash
 cd ~/zephyrproject/zephyr
@@ -149,6 +198,25 @@ west build -p always -b esp32s3_devkitc/esp32s3/procpu samples/hello_world
 Kalau build selesai tanpa error dan diakhiri baris semacam `Memory region  Used Size  Region Size  %age Used`, berarti toolchain, SDK, dan HAL semuanya sudah nyambung dengan benar. Detail build dan flashing yang sebenarnya dibahas di [Bagian 2](../02-aplikasi-pertama/README.md) — bagian ini cuma untuk memastikan environment beres dulu.
 
 ![Output west build yang berhasil](images/01-build-sukses.png)
+
+## Menaruh project sendiri di dalam workspace
+
+Kalau Anda mengikuti tutorial ini dan menyimpan kode contoh (misal folder `Zephyr_Indonesia/02-aplikasi-pertama`) terpisah dari `~/zephyrproject`, ingat poin dari bagian sebelumnya: folder aplikasi **tidak wajib** didaftarkan sebagai project west, tapi dia **wajib** berada di dalam topdir supaya `west` bisa menemukan `.west/config` di atasnya. Dua opsi paling umum:
+
+1. **Taruh langsung di dalam topdir** — cara paling sederhana untuk belajar:
+   ```bash
+   mv ~/project/Zephyr_Indonesia ~/zephyrproject/
+   cd ~/zephyrproject/Zephyr_Indonesia/02-aplikasi-pertama
+   west build -p always -b esp32s3_devkitc/esp32s3/procpu src
+   ```
+2. **Symlink** kalau Anda ingin tetap menyimpan source tutorial di lokasi lain (misal supaya gampang di-`git pull` terpisah dari workspace Zephyr):
+   ```bash
+   ln -s ~/project/Zephyr_Indonesia ~/zephyrproject/Zephyr_Indonesia
+   cd ~/zephyrproject/Zephyr_Indonesia/02-aplikasi-pertama
+   west build -p always -b esp32s3_devkitc/esp32s3/procpu src
+   ```
+
+Keduanya membuat west, saat mencari `.west/` ke arah parent directory, akhirnya sampai ke `~/zephyrproject/.west` dan berhasil menemukannya — sehingga `build`, `flash`, dan `espressif monitor` langsung tersedia tanpa perlu instalasi ulang apa pun.
 
 ## Troubleshooting akses USB
 
@@ -185,6 +253,8 @@ Kalau board dua-duanya tidak muncul sama sekali di `/dev`, coba kabel USB lain (
 
 ## Troubleshooting lain yang pernah saya temui
 
+**`west: unknown command "build"; do you need to run this inside a workspace?`** — Anda menjalankan west dari folder yang bukan bagian dari topdir mana pun (tidak ada `.west/` di folder itu atau di parent-nya), atau workspace-nya ada tapi `west update` belum pernah selesai dijalankan sehingga `zephyr/scripts/west-commands.yml` belum ada di disk. Cek dengan `west topdir` dan `west list` — lihat bagian "Bagaimana workspace west bekerja" di atas untuk detail lengkap dan cara memindahkan/symlink project Anda ke dalam topdir yang benar.
+
 **`Unable to find Zephyr SDK`** — biasanya karena environment variable `ZEPHYR_SDK_INSTALL_DIR` tidak terdeteksi. Set manual atau pastikan script `setup.sh` SDK dijalankan sampai selesai (dia menulis file cmake package registry di `~/.cmake/packages/Zephyr-sdk/`).
 
 **`west: command not found`** setelah membuka terminal baru — venv belum diaktifkan lagi. Solusinya ya aktifkan lagi venv, atau pakai alias yang sudah disiapkan di atas.
@@ -200,6 +270,7 @@ Kalau board dua-duanya tidak muncul sama sekali di `/dev`, coba kabel USB lain (
 ## Sumber
 
 - [Zephyr Getting Started Guide](https://docs.zephyrproject.org/latest/develop/getting_started/index.html)
+- [Zephyr West documentation — Workspace concepts](https://docs.zephyrproject.org/latest/develop/west/basics.html)
 - [Espressif Zephyr Getting Started](https://docs.espressif.com/projects/zephyr/en/latest/introduction.html)
 - [Zephyr SDK releases](https://github.com/zephyrproject-rtos/sdk-ng/releases)
 - [West documentation](https://docs.zephyrproject.org/latest/develop/west/index.html)
