@@ -94,6 +94,34 @@ west espressif monitor
 
 Yang saya ubah dari `hello_world` standar: pesan outputnya, dan tambahan print versi kernel Zephyr yang sedang jalan lewat macro `KERNEL_VERSION_STRING`. Ini berguna sebagai kebiasaan baik — kalau nanti punya banyak board dengan versi Zephyr berbeda-beda, print versi di boot membantu debugging "kok perilakunya beda" ternyata karena versi Zephyr-nya juga beda.
 
+## Ringkasan command
+
+Tabel ini rekap semua command yang dipakai di bagian ini, buat referensi cepat tanpa harus scroll ulang.
+
+| Command | Fungsi | Kapan dipakai |
+|---|---|---|
+| `source ~/zephyrproject/.venv/bin/activate` | Aktifkan Python venv | Setiap buka terminal baru sebelum kerja dengan west |
+| `west build -p always -b <board> <path>` | Build aplikasi dari nol (pristine) | Build pertama kali, ganti board, atau ganti devicetree overlay |
+| `west build` | Build incremental (tanpa `-p`, pakai konfigurasi build sebelumnya) | Build ulang setelah cuma edit source code, lebih cepat |
+| `west flash` | Flash hasil build ke board, port dideteksi otomatis | Setelah build sukses dan board tersambung |
+| `west flash --esp-device <port>` | Flash dengan port serial ditentukan manual | Kalau auto-detect gagal atau ada lebih dari satu board tersambung |
+| `west espressif monitor` | Buka serial monitor, port dideteksi otomatis | Melihat output `printk`/log setelah board menyala |
+| `west espressif monitor -p <port>` | Serial monitor dengan port manual | Sama seperti di atas, kalau auto-detect gagal |
+| `screen <port> 115200` | Alternatif serial monitor universal | Kalau `west espressif monitor` tidak tersedia di versi Zephyr yang dipakai |
+| `dmesg \| tail -20` | Lihat device serial yang baru terdeteksi | Cari tahu board muncul di `/dev/ttyACM0` atau `/dev/ttyUSB0` |
+
+Opsi tambahan untuk `west build` yang sering berguna meski tidak dipakai eksplisit di atas:
+
+| Flag | Fungsi |
+|---|---|
+| `-b <board>` | Tentukan board target, wajib ada di build pertama untuk direktori build tersebut |
+| `-p always` | Pristine build, selalu bersihkan folder `build/` dulu |
+| `-p auto` | Default kalau `-p` tidak ditulis — west deteksi otomatis perlu pristine atau tidak |
+| `-p never` | Selalu incremental, tidak pernah bersihkan otomatis |
+| `-d <dir>` | Pakai direktori build custom, bukan `build/` default |
+| `-t <target>` | Jalankan target build tertentu, misal `menuconfig` untuk buka UI konfigurasi Kconfig |
+| `--sysbuild` | Aktifkan sysbuild, build multi-image (berguna nanti untuk MCUboot/OTA) |
+
 ## Sumber
 
 - [Zephyr samples/hello_world](https://github.com/zephyrproject-rtos/zephyr/tree/main/samples/hello_world)
