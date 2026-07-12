@@ -1,4 +1,5 @@
 #include <zephyr/kernel.h>
+#include <zephyr/version.h>
 #include <zephyr/sys/printk.h>
 
 int main(void)
