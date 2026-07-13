@@ -48,7 +48,6 @@ Ganti `/dev/ttyACM0` dengan device yang sesuai hasil pengecekan `dmesg` seperti 
 Jebakan yang sering terjadi: flashing gagal dengan pesan `A fatal error occurred: Failed to connect to ESP32-S3: Timed out waiting for packet header`. Kalau ini muncul, tahan tombol **BOOT** di board sesaat sebelum dan selama proses koneksi awal esptool (biasanya beberapa detik pertama setelah `west flash` mulai jalan), lalu lepas setelah proses upload benar-benar mulai (biasanya ditandai progress percentage yang mulai bergerak). Ini karena sebagian board DevKitC-1 tidak auto-reset ke bootloader mode dengan sinyal DTR/RTS default, tergantung revisi PCB dan driver USB-serial yang dipakai.
 
 ![Proses west flash di terminal](images/02-proses-flash.png)
-<!-- TODO(author): tambahkan screenshot terminal saat west flash sedang berjalan, termasuk progress percentage esptool -->
 
 ## Serial monitor
 
@@ -79,49 +78,19 @@ screen /dev/ttyACM0 115200
 Keluar dari `screen` dengan `Ctrl+A` lalu `K` lalu konfirmasi `y`.
 
 ![Output serial monitor hello world](images/02-serial-monitor.png)
-<!-- TODO(author): tambahkan screenshot output west espressif monitor menampilkan teks Hello World -->
 
 ## Latihan
 
-Kode latihan untuk bagian ini ada di repository tutorial ini sendiri, bukan di dalam source tree Zephyr. Supaya `west` bisa menemukannya (ingat pembahasan topdir di Bagian 1 — west mencari `.west/` ke arah parent directory), clone repository ini **ke dalam topdir** `~/zephyrproject`, bukan di lokasi sembarang seperti `~/project/` atau `~/Documents/`:
+Kode latihan ada di [src/main.c](src/main.c) beserta [src/CMakeLists.txt](src/CMakeLists.txt) dan [src/prj.conf](src/prj.conf) supaya bisa langsung di-build sebagai aplikasi berdiri sendiri, tanpa masuk ke source tree Zephyr:
 
 ```bash
-cd ~/zephyrproject
-git clone https://github.com/WenaHarle/Zephyr_Indonesia
-cd Zephyr_Indonesia/02-aplikasi-pertama
-```
-
-Dengan begini, `Zephyr_Indonesia/` sekarang jadi folder biasa di dalam `~/zephyrproject` (sejajar dengan `zephyr/`, `modules/`, `bootloader/`, `tools/`), dan west akan otomatis menemukan `.west/config` di atasnya tanpa perlu argumen tambahan apa pun. Kalau sebelumnya Anda sudah kadung clone repo ini di luar topdir, cukup pindahkan foldernya:
-
-```bash
-mv ~/project/Zephyr_Indonesia ~/zephyrproject/
-cd ~/zephyrproject/Zephyr_Indonesia/02-aplikasi-pertama
-```
-
-Isi folder `02-aplikasi-pertama/` ada [src/main.c](src/main.c) beserta [src/CMakeLists.txt](src/CMakeLists.txt) dan [src/prj.conf](src/prj.conf) supaya bisa langsung di-build sebagai aplikasi berdiri sendiri, tanpa masuk ke source tree Zephyr:
-
-```bash
+cd 02-aplikasi-pertama
 west build -p always -b esp32s3_devkitc/esp32s3/procpu src
 west flash
 west espressif monitor
 ```
 
 Yang saya ubah dari `hello_world` standar: pesan outputnya, dan tambahan print versi kernel Zephyr yang sedang jalan lewat macro `KERNEL_VERSION_STRING`. Ini berguna sebagai kebiasaan baik — kalau nanti punya banyak board dengan versi Zephyr berbeda-beda, print versi di boot membantu debugging "kok perilakunya beda" ternyata karena versi Zephyr-nya juga beda.
-
-Bagian selanjutnya di tutorial ini juga mengasumsikan repository `Zephyr_Indonesia` sudah berada di dalam `~/zephyrproject`, jadi struktur foldernya kira-kira begini setelah langkah di atas:
-
-```
-~/zephyrproject/
-├── bootloader/
-├── modules/
-├── tools/
-├── zephyr/
-└── Zephyr_Indonesia/          <- hasil git clone tadi
-    ├── 01-workspace-dan-toolchain/
-    ├── 02-aplikasi-pertama/
-    │   └── src/
-    └── ...
-```
 
 ## Ringkasan command
 
@@ -130,7 +99,6 @@ Tabel ini rekap semua command yang dipakai di bagian ini, buat referensi cepat t
 | Command | Fungsi | Kapan dipakai |
 |---|---|---|
 | `source ~/zephyrproject/.venv/bin/activate` | Aktifkan Python venv | Setiap buka terminal baru sebelum kerja dengan west |
-| `git clone https://github.com/WenaHarle/Zephyr_Indonesia` | Ambil source kode tutorial ini | Sekali saja, dijalankan di dalam `~/zephyrproject` |
 | `west build -p always -b <board> <path>` | Build aplikasi dari nol (pristine) | Build pertama kali, ganti board, atau ganti devicetree overlay |
 | `west build` | Build incremental (tanpa `-p`, pakai konfigurasi build sebelumnya) | Build ulang setelah cuma edit source code, lebih cepat |
 | `west flash` | Flash hasil build ke board, port dideteksi otomatis | Setelah build sukses dan board tersambung |
@@ -157,4 +125,3 @@ Opsi tambahan untuk `west build` yang sering berguna meski tidak dipakai eksplis
 - [Zephyr samples/hello_world](https://github.com/zephyrproject-rtos/zephyr/tree/main/samples/hello_world)
 - [West build command reference](https://docs.zephyrproject.org/latest/develop/west/build-flash-debug.html)
 - [Espressif west runner](https://docs.espressif.com/projects/zephyr/en/latest/flash_debug.html)
-- [Repository tutorial Zephyr Indonesia](https://github.com/WenaHarle/Zephyr_Indonesia)
